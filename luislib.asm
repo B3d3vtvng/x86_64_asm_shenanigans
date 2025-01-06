@@ -116,7 +116,7 @@ itoa:
     add rax, 48
 
     mov rdi, [rsp+8]
-    mov rdx, 20
+    mov rdx, 17
     sub rdx, [rsp+24]
     mov byte[rdi+rdx], al
 
@@ -124,9 +124,9 @@ itoa:
 
     jmp .itoa_loop
 .itoa_loop_end:
-    
-
-    mov rax, [rsp+8]
+    mov rdi, [rsp+8]
+    mov rsi, 18
+    call strip_null
 
     xor rdi, rdi
     xor rdx, rdx
@@ -140,7 +140,7 @@ itoa:
 
 
 strip_null:
-    ; rdi: char* buf
+    ; rdi: mut char* buf
     ; rsi: int len
     push rdi
     push rsi
@@ -150,15 +150,18 @@ strip_null:
     mov rbp, rsp
     and rsp, -16
 
-    sub rsp, 16
-    mov qword[rsp], rdi ; buf ptr
-    mov qword[rsp+8], rsi ; len
-
+    mov rbx, rdi
     mov rdi, rsi
     call calculate_stack_alignment
 
-    add rsi, rax
-    sub rsp, rsi ; rsp+16... -> temporary buffer for cleared string
+    sub rsp, 16
+    sub rsp, rsi
+    sub rsp, rax ; rsp+16... -> temporary buffer for cleared string
+
+    mov rdi, rbx
+    
+    mov qword[rsp], rdi ; buf ptr
+    mov qword[rsp+8], rsi ; len
 
     mov rax, 0
     mov rbx, 0
@@ -168,7 +171,8 @@ strip_null:
     cmp rax, [rsp+8]
     je .strip_null_loop_end
 
-    mov dl, [rsp+rax]
+    mov rdi, [rsp]
+    mov dl, [rdi+rax]
     cmp dl, 0
     je .skip_null
 
@@ -180,10 +184,11 @@ strip_null:
     jmp .strip_null_loop
 .skip_null:
     inc rax
-    jmp .skip_null_loop
-.skip_null_loop_end:
+    jmp .strip_null_loop
+.strip_null_loop_end:
     mov rdi, [rsp]
-    mov rsi, rsp+16
+    mov rsi, rsp
+    add rsi, 16
     mov rdx, [rsp+8]
     call strcpy
 
@@ -198,7 +203,7 @@ strip_null:
 
 strcpy:
     ; rdi: char* to buf1
-    ; rsi: char* to buf2
+    ; rsi: char* stackbuf
     ; rdx: int length
     xor rax, rax
     dec rdx
@@ -207,15 +212,19 @@ strcpy:
     cmp rax, rdx
     je .strcpy_loop_end
 
-    mov bl, [rsi+rax]
+    mov rcx, rsi
+    add rcx, rax
+    mov bl, [rcx]
     mov byte[rdi+rax], bl
 
+    inc rax
+    xor rcx, rcx
+
     jmp .strcpy_loop
-.strcpy_loop_end
+.strcpy_loop_end:
     mov rax, rdi
 
     ret
-
 
     
 calculate_stack_alignment:

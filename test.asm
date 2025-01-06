@@ -4,20 +4,20 @@ section .text align=16
     global _start
 
 _start:
-    lea rdi, [rel num_str]
+    lea rdi, [rel test_num]
     call stoi
 
     mov rdi, rax
-    lea rsi, [rel buf]
+    lea rsi, [rel test_buf]
     call itoa
 
-    lea rdi, [rel buf]
+    lea rdi, [rel test_buf]
     call print
-
+    
     exit
 
 section .bss
-    buf: resb 10
+    test_buf: resb 18
 
 section .data
-    num_str: db "100"
+    test_num: db "100"
